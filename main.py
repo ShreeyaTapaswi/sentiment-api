@@ -13,7 +13,10 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+client = OpenAI(
+    api_key=os.environ.get("OPENAI_API_KEY"),
+    base_url="https://aipipe.org/openai/v1"
+)
 
 class CommentRequest(BaseModel):
     comment: str
