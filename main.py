@@ -13,7 +13,7 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 class CommentRequest(BaseModel):
     comment: str
@@ -30,7 +30,7 @@ async def analyze_comment(body: CommentRequest):
             messages=[
                 {
                     "role": "system",
-                    "content": "Classify sentiment as 'positive', 'negative', or 'neutral'. Rate 1-5 where 5=highly positive, 1=highly negative, 3=neutral."
+                    "content": "Classify sentiment as exactly 'positive', 'negative', or 'neutral'. Rate 1-5 where 5=highly positive, 1=highly negative, 3=neutral."
                 },
                 {"role": "user", "content": body.comment}
             ],
