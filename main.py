@@ -1,8 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from openai import OpenAI
 import os
+import json
+import google.generativeai as genai
 
 app = FastAPI()
 
@@ -13,32 +14,30 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-client = OpenAI(
-    api_key=os.environ.get("OPENAI_API_KEY"),
-    base_url="https://aipipe.org/openai/v1"
-)
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
 class CommentRequest(BaseModel):
     comment: str
 
-class SentimentResponse(BaseModel):
-    sentiment: str
-    rating: int
-
 @app.post("/comment")
 async def analyze_comment(body: CommentRequest):
     try:
-        response = client.beta.chat.completions.parse(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "Classify sentiment as exactly 'positive', 'negative', or 'neutral'. Rate 1-5 where 5=highly positive, 1=highly negative, 3=neutral."
-                },
-                {"role": "user", "content": body.comment}
-            ],
-            response_format=SentimentResponse,
-        )
-        return response.choices[0].message.parsed
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        prompt = f"""Analyze the sentiment of this comment and respond with ONLY a JSON object.
+Comment: "{body.comment}"
+Rules:
+- sentiment must be exactly one of: "positive", "negative", "neutral"
+- rating must be an integer 1-5 (5=highly positive, 1=highly negative, 3=neutral)
+Respond with only this JSON format, nothing else:
+{{"sentiment": "positive", "rating": 5}}"""
+
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+        if "```" in text:
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+        result = json.loads(text.strip())
+        return {"sentiment": result["sentiment"], "rating": result["rating"]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
