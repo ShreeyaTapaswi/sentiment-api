@@ -26,7 +26,7 @@ class SentimentResponse(BaseModel):
 async def analyze_comment(body: CommentRequest):
     try:
         response = client.beta.chat.completions.parse(
-            model="gpt-4.1-mini",
+            model="gpt-4o-mini",
             messages=[
                 {
                     "role": "system",
